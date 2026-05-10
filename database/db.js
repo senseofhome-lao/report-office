@@ -5,10 +5,15 @@ let pool;
 
 function getPool() {
   if (!pool) {
+    if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
+      ssl: { rejectUnauthorized: false },
+      max: 3,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000
     });
+    pool.on('error', (err) => console.error('PG pool error:', err.message));
   }
   return pool;
 }

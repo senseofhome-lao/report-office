@@ -5,3 +5,4 @@ database/local.sqlite
 .env
 .env.local
 *.log
+database_connection.md
