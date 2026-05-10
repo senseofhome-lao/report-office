@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ຜູ້ບໍລິຫານ - ລະບົບຕິດຕາມການເຄື່ອນໄຫວ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans Lao', sans-serif; }
+    .sidebar { width: 260px; }
+  </style>
+</head>
+<body class="bg-gray-50 flex">
+
+  <!-- Sidebar -->
+  <aside class="sidebar bg-blue-900 text-white flex flex-col fixed left-0 top-0 h-full z-40">
+    <div class="p-6 border-b border-blue-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center">
+          <svg class="w-6 h-6 text-blue-900" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+          </svg>
+        </div>
+        <div>
+          <p class="font-semibold text-sm" id="admin-name">Admin</p>
+          <p class="text-xs text-yellow-300">ຜູ້ບໍລິຫານລະບົບ</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 p-4 space-y-1">
+      <button onclick="showSection('dashboard')" id="nav-dashboard"
+        class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-medium transition bg-blue-800 text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        ສະຖິຕິລວມ
+      </button>
+      <button onclick="showSection('movements')" id="nav-movements"
+        class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-medium transition text-blue-200 hover:bg-blue-800 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        ລາຍການທັງໝົດ
+      </button>
+      <button onclick="showSection('users')" id="nav-users"
+        class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-medium transition text-blue-200 hover:bg-blue-800 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        ຈັດການຜູ້ໃຊ້
+      </button>
+    </nav>
+
+    <div class="p-4 border-t border-blue-800">
+      <button onclick="logout()"
+        class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-blue-200 hover:bg-blue-800 hover:text-white transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        ອອກຈາກລະບົບ
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 ml-64 p-6">
+    <div class="max-w-6xl mx-auto">
+
+      <!-- Header -->
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">ລະບົບຕິດຕາມການເຄື່ອນໄຫວຕ່າງແຂວງ</h1>
+        <p class="text-gray-500 text-sm mt-1">ຫ້ອງການຜູ້ບໍລິຫານ - ທະນາຄານ LDB</p>
+      </div>
+
+      <!-- Alert -->
+      <div id="alert" class="hidden mb-4 p-4 rounded-lg text-sm font-medium"></div>
+
+      <!-- DASHBOARD SECTION -->
+      <div id="section-dashboard">
+        <!-- Year Filter & Export -->
+        <div class="flex items-center justify-between mb-5">
+          <div class="flex items-center gap-3">
+            <label class="text-sm font-medium text-gray-600">ເລືອກປີ:</label>
+            <select id="year-select" onchange="loadDashboard()"
+              class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+            </select>
+          </div>
+          <button onclick="exportAdminCSV()"
+            class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            ດາວໂຫລດ CSV ທັງໝົດ
+          </button>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-4 gap-4 mb-6">
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs text-gray-500 mb-1">ການເຄື່ອນໄຫວທັງໝົດ</p>
+                <p class="text-3xl font-bold text-blue-700" id="stat-total">-</p>
+                <p class="text-xs text-gray-400 mt-1" id="stat-pending-summary"></p>
+              </div>
+              <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs text-gray-500 mb-1">ຄ. ສະຖານທີ່ (ສະເລ່ຍ)</p>
+                <p class="text-3xl font-bold text-blue-600" id="stat-loc">-</p>
+              </div>
+              <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs text-gray-500 mb-1">ຄ. ການບໍລິການ (ສະເລ່ຍ)</p>
+                <p class="text-3xl font-bold text-green-600" id="stat-svc">-</p>
+              </div>
+              <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs text-gray-500 mb-1">ຄ. ພະນັກງານ (ສະເລ່ຍ)</p>
+                <p class="text-3xl font-bold text-purple-600" id="stat-stf">-</p>
+              </div>
+              <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-purple-500" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-2 gap-5 mb-6">
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <h3 class="font-semibold text-gray-700 mb-4">ຈຳນວນການເຄື່ອນໄຫວຕາມໄລຍະ</h3>
+            <canvas id="period-chart" height="200"></canvas>
+          </div>
+          <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <h3 class="font-semibold text-gray-700 mb-4">ຄະແນນສະເລ່ຍຕາມໄລຍະ</h3>
+            <canvas id="score-chart" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Period Details Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-5">
+          <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-700">ສະຫຼຸບຜົນການປະເມີນຕາມໄລຍະ</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ໄລຍະ</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ຈຳນວນ</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ສະຖານທີ່</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ການບໍລິການ</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ພະນັກງານ</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ສະເລ່ຍ</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ລະດັບ</th>
+                </tr>
+              </thead>
+              <tbody id="period-table" class="divide-y divide-gray-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- By User Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-5">
+          <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-700">ຜົນການປະເມີນຕາມພະນັກງານ</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ພະນັກງານ</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ສາຂາ</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ຈຳນວນ</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ສະຖານທີ່</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ການບໍລິການ</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ພະນັກງານ</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ສະເລ່ຍ</th>
+                </tr>
+              </thead>
+              <tbody id="user-table" class="divide-y divide-gray-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Province Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div class="px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-700">ການເຄື່ອນໄຫວຕາມແຂວງ</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ແຂວງ</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ຈຳນວນ</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ຄະແນນສະເລ່ຍ</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ສັດສ່ວນ</th>
+                </tr>
+              </thead>
+              <tbody id="province-table" class="divide-y divide-gray-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOVEMENTS SECTION -->
+      <div id="section-movements" class="hidden">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="text-lg font-semibold text-gray-700">ລາຍການການເຄື່ອນໄຫວທັງໝົດ</h2>
+          <div class="flex gap-3">
+            <select id="filter-year" onchange="loadAllMovements()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+              <option value="">ທຸກປີ</option>
+            </select>
+            <select id="filter-period" onchange="loadAllMovements()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+              <option value="">ທຸກໄລຍະ</option>
+              <option value="1">ໄລຍະ 1</option>
+              <option value="2">ໄລຍະ 2</option>
+              <option value="3">ໄລຍະ 3</option>
+            </select>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ພະນັກງານ</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ວັນທີ</th>
+                  <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">ໄລຍະ</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ແຂວງ</th>
+                  <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">ສະຖານທີ່</th>
+                  <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">ບໍລິການ</th>
+                  <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">ພະນັກງານ</th>
+                  <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">ສະເລ່ຍ</th>
+                </tr>
+              </thead>
+              <tbody id="all-movements-table" class="divide-y divide-gray-100 text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- USERS SECTION -->
+      <div id="section-users" class="hidden">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="text-lg font-semibold text-gray-700">ຈັດການຜູ້ໃຊ້ລະບົບ</h2>
+          <button onclick="openUserModal()"
+            class="flex items-center gap-2 bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            ເພີ່ມຜູ້ໃຊ້ໃໝ່
+          </button>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ຊື່</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ຊື່ຜູ້ໃຊ້</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ສາຂາ</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ສິດ</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">ຈັດການ</th>
+              </tr>
+            </thead>
+            <tbody id="users-table" class="divide-y divide-gray-100 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Add User Modal -->
+  <div id="user-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+      <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="font-semibold text-gray-700">ເພີ່ມຜູ້ໃຊ້ໃໝ່</h3>
+        <button onclick="closeUserModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <form id="user-form" class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ຊື່-ນາມສະກຸນ <span class="text-red-500">*</span></label>
+          <input type="text" id="u-fullname" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ຊື່ຜູ້ໃຊ້ <span class="text-red-500">*</span></label>
+          <input type="text" id="u-username" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ລະຫັດຜ່ານ <span class="text-red-500">*</span></label>
+          <input type="password" id="u-password" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ສາຂາ</label>
+          <input type="text" id="u-branch" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ສິດການໃຊ້ງານ</label>
+          <select id="u-role" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+            <option value="user">ຜູ້ປ້ອນຂໍ້ມູນ</option>
+            <option value="admin">ຜູ້ບໍລິຫານ</option>
+          </select>
+        </div>
+        <div id="user-form-error" class="hidden text-sm text-red-600 bg-red-50 p-3 rounded-lg"></div>
+        <button type="submit" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2.5 rounded-lg transition">
+          ເພີ່ມຜູ້ໃຊ້
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let periodChart, scoreChart;
+    let summaryData = {};
+
+    async function init() {
+      const res = await fetch('/api/auth/me');
+      if (!res.ok || (await res.clone().json()).role !== 'admin') {
+        window.location.href = '/'; return;
+      }
+      const user = await res.json();
+      document.getElementById('admin-name').textContent = user.full_name;
+
+      await loadDashboard();
+    }
+
+    async function loadDashboard() {
+      const year = document.getElementById('year-select').value || new Date().getFullYear();
+      const res = await fetch(`/api/admin/summary?year=${year}`);
+      summaryData = await res.json();
+
+      // Populate year selector
+      const yearSel = document.getElementById('year-select');
+      const currentVal = yearSel.value;
+      yearSel.innerHTML = '';
+      const years = summaryData.availableYears.length ? summaryData.availableYears : [String(new Date().getFullYear())];
+      if (!years.includes(String(new Date().getFullYear()))) years.unshift(String(new Date().getFullYear()));
+      years.forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = y; opt.textContent = y + ' ປີ';
+        if (y == year) opt.selected = true;
+        yearSel.appendChild(opt);
+      });
+      document.getElementById('filter-year').innerHTML = '<option value="">ທຸກປີ</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+
+      // Stats cards
+      document.getElementById('stat-total').textContent = summaryData.totalMovements;
+      const sc = summaryData.overallScores || {};
+      document.getElementById('stat-loc').textContent = sc.avg_location ? (+sc.avg_location).toFixed(1) : '-';
+      document.getElementById('stat-svc').textContent = sc.avg_service ? (+sc.avg_service).toFixed(1) : '-';
+      document.getElementById('stat-stf').textContent = sc.avg_staff ? (+sc.avg_staff).toFixed(1) : '-';
+      const ps = summaryData.pendingSummary;
+      if (ps && ps.total > 0) {
+        const pct = Math.round((ps.done / ps.total) * 100);
+        document.getElementById('stat-pending-summary').textContent = `ຂໍ້ຄົງຄ້າງ: ${ps.done}/${ps.total} (${pct}% ສຳເລັດ)`;
+      }
+
+      renderPeriodChart();
+      renderPeriodTable();
+      renderUserTable();
+      renderProvinceTable();
+    }
+
+    function renderPeriodChart() {
+      const periods = [1, 2, 3];
+      const counts = periods.map(p => { const d = summaryData.byPeriod.find(x => x.period == p); return d ? d.count : 0; });
+
+      if (periodChart) periodChart.destroy();
+      periodChart = new Chart(document.getElementById('period-chart'), {
+        type: 'bar',
+        data: {
+          labels: ['ໄລຍະ 1', 'ໄລຍະ 2', 'ໄລຍະ 3'],
+          datasets: [{ label: 'ຈຳນວນ', data: counts, backgroundColor: ['#3b82f6', '#8b5cf6', '#f59e0b'], borderRadius: 6 }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+      });
+
+      const avgLoc = periods.map(p => { const d = summaryData.byPeriod.find(x => x.period == p); return d ? +(+d.avg_location).toFixed(1) : 0; });
+      const avgSvc = periods.map(p => { const d = summaryData.byPeriod.find(x => x.period == p); return d ? +(+d.avg_service).toFixed(1) : 0; });
+      const avgStf = periods.map(p => { const d = summaryData.byPeriod.find(x => x.period == p); return d ? +(+d.avg_staff).toFixed(1) : 0; });
+
+      if (scoreChart) scoreChart.destroy();
+      scoreChart = new Chart(document.getElementById('score-chart'), {
+        type: 'bar',
+        data: {
+          labels: ['ໄລຍະ 1', 'ໄລຍະ 2', 'ໄລຍະ 3'],
+          datasets: [
+            { label: 'ສະຖານທີ່', data: avgLoc, backgroundColor: '#3b82f6', borderRadius: 4 },
+            { label: 'ການບໍລິການ', data: avgSvc, backgroundColor: '#10b981', borderRadius: 4 },
+            { label: 'ພະນັກງານ', data: avgStf, backgroundColor: '#8b5cf6', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+          scales: { y: { beginAtZero: true, max: 100 } }
+        }
+      });
+    }
+
+    function getGradeLabel(avg) {
+      if (avg >= 90) return '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">ດີເລີດ</span>';
+      if (avg >= 80) return '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">ດີ</span>';
+      if (avg >= 70) return '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">ປານກາງ</span>';
+      return '<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">ຕ້ອງປັບປຸງ</span>';
+    }
+
+    function renderPeriodTable() {
+      const tbody = document.getElementById('period-table');
+      if (!summaryData.byPeriod.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">ບໍ່ມີຂໍ້ມູນ</td></tr>';
+        return;
+      }
+      tbody.innerHTML = summaryData.byPeriod.map(p => {
+        const avg = +(+p.avg_total).toFixed(2);
+        return `<tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 font-medium">ໄລຍະ ${p.period}</td>
+          <td class="px-6 py-4 text-center">${p.count}</td>
+          <td class="px-6 py-4 text-center text-blue-600 font-medium">${(+p.avg_location).toFixed(1)}</td>
+          <td class="px-6 py-4 text-center text-green-600 font-medium">${(+p.avg_service).toFixed(1)}</td>
+          <td class="px-6 py-4 text-center text-purple-600 font-medium">${(+p.avg_staff).toFixed(1)}</td>
+          <td class="px-6 py-4 text-center font-bold">${avg}</td>
+          <td class="px-6 py-4 text-center">${getGradeLabel(avg)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderUserTable() {
+      const tbody = document.getElementById('user-table');
+      if (!summaryData.byUser.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">ບໍ່ມີຂໍ້ມູນ</td></tr>';
+        return;
+      }
+      tbody.innerHTML = summaryData.byUser.map(u => {
+        const avg = +(+u.avg_total).toFixed(2);
+        return `<tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 font-medium">${u.full_name}</td>
+          <td class="px-6 py-4 text-gray-500">${u.branch || '-'}</td>
+          <td class="px-6 py-4 text-center">${u.count}</td>
+          <td class="px-6 py-4 text-center text-blue-600">${(+u.avg_location).toFixed(1)}</td>
+          <td class="px-6 py-4 text-center text-green-600">${(+u.avg_service).toFixed(1)}</td>
+          <td class="px-6 py-4 text-center text-purple-600">${(+u.avg_staff).toFixed(1)}</td>
+          <td class="px-6 py-4 text-center font-bold">${avg}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderProvinceTable() {
+      const tbody = document.getElementById('province-table');
+      const total = summaryData.totalMovements || 1;
+      if (!summaryData.byProvince.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-400">ບໍ່ມີຂໍ້ມູນ</td></tr>';
+        return;
+      }
+      tbody.innerHTML = summaryData.byProvince.map(p => {
+        const pct = ((p.count / total) * 100).toFixed(1);
+        const avg = p.avg_score ? (+p.avg_score).toFixed(1) : '-';
+        return `<tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 font-medium">${p.province}</td>
+          <td class="px-6 py-4 text-center">${p.count}</td>
+          <td class="px-6 py-4 text-center">${avg}</td>
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-2">
+              <div class="flex-1 bg-gray-200 rounded-full h-2"><div class="h-2 rounded-full bg-blue-500" style="width:${pct}%"></div></div>
+              <span class="text-xs text-gray-500 w-10">${pct}%</span>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function loadAllMovements() {
+      const year = document.getElementById('filter-year').value;
+      const period = document.getElementById('filter-period').value;
+      let url = '/api/admin/movements?';
+      if (year) url += `year=${year}&`;
+      if (period) url += `period=${period}`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+      const tbody = document.getElementById('all-movements-table');
+      const periodColors = ['', 'bg-blue-100 text-blue-700', 'bg-purple-100 text-purple-700', 'bg-orange-100 text-orange-700'];
+
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-400">ບໍ່ມີຂໍ້ມູນ</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(m => {
+        const avg = ((+m.location_score + +m.service_score + +m.staff_score) / 3).toFixed(1);
+        const avgColor = avg >= 80 ? 'text-green-600' : avg >= 60 ? 'text-yellow-600' : 'text-red-500';
+        return `<tr class="hover:bg-gray-50">
+          <td class="px-4 py-3"><p class="font-medium">${m.full_name}</p><p class="text-xs text-gray-400">${m.branch || ''}</p></td>
+          <td class="px-4 py-3 text-gray-500 text-xs">${m.movement_date_start}<br>${m.movement_date_end}</td>
+          <td class="px-4 py-3 text-center"><span class="text-xs px-2 py-0.5 rounded-full ${periodColors[m.period]}">ໄລຍະ ${m.period}</span></td>
+          <td class="px-4 py-3 text-sm">${m.province}</td>
+          <td class="px-4 py-3 text-center text-blue-600">${m.location_score}</td>
+          <td class="px-4 py-3 text-center text-green-600">${m.service_score}</td>
+          <td class="px-4 py-3 text-center text-purple-600">${m.staff_score}</td>
+          <td class="px-4 py-3 text-center font-bold ${avgColor}">${avg}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function loadUsers() {
+      const res = await fetch('/api/admin/users');
+      const users = await res.json();
+      const tbody = document.getElementById('users-table');
+      const roleLabel = { admin: '<span class="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-700">ຜູ້ບໍລິຫານ</span>', user: '<span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">ຜູ້ປ້ອນຂໍ້ມູນ</span>' };
+      tbody.innerHTML = users.map(u => `
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 font-medium">${u.full_name}</td>
+          <td class="px-6 py-4 text-gray-500">${u.username}</td>
+          <td class="px-6 py-4 text-gray-500">${u.branch || '-'}</td>
+          <td class="px-6 py-4 text-center">${roleLabel[u.role] || u.role}</td>
+          <td class="px-6 py-4 text-center">
+            <button onclick="deleteUser(${u.id}, '${u.full_name}')" class="text-red-400 hover:text-red-600 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </td>
+        </tr>`).join('');
+    }
+
+    async function deleteUser(id, name) {
+      if (!confirm(`ທ່ານແນ່ໃຈບໍ່ທີ່ຈະລຶບຜູ້ໃຊ້ "${name}"?`)) return;
+      const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) { showAlert('ລຶບຜູ້ໃຊ້ສຳເລັດ', 'success'); loadUsers(); }
+      else showAlert(data.error, 'error');
+    }
+
+    function openUserModal() { document.getElementById('user-modal').classList.remove('hidden'); }
+    function closeUserModal() { document.getElementById('user-modal').classList.add('hidden'); document.getElementById('user-form').reset(); }
+
+    document.getElementById('user-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById('user-form-error');
+      errEl.classList.add('hidden');
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: document.getElementById('u-fullname').value,
+          username: document.getElementById('u-username').value,
+          password: document.getElementById('u-password').value,
+          branch: document.getElementById('u-branch').value,
+          role: document.getElementById('u-role').value
+        })
+      });
+      const data = await res.json();
+      if (res.ok) { closeUserModal(); showAlert('ເພີ່ມຜູ້ໃຊ້ສຳເລັດ', 'success'); loadUsers(); }
+      else { errEl.textContent = data.error; errEl.classList.remove('hidden'); }
+    });
+
+    function showSection(name) {
+      ['dashboard', 'movements', 'users'].forEach(s => {
+        document.getElementById(`section-${s}`).classList.toggle('hidden', s !== name);
+        document.getElementById(`nav-${s}`).classList.toggle('bg-blue-800', s === name);
+        document.getElementById(`nav-${s}`).classList.toggle('text-white', s === name);
+        document.getElementById(`nav-${s}`).classList.toggle('text-blue-200', s !== name);
+      });
+      if (name === 'movements') loadAllMovements();
+      if (name === 'users') loadUsers();
+    }
+
+    function showAlert(msg, type) {
+      const el = document.getElementById('alert');
+      el.textContent = msg;
+      el.className = `mb-4 p-4 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 3000);
+    }
+
+    function exportAdminCSV() {
+      const year = document.getElementById('year-select').value;
+      window.location.href = `/api/admin/export/csv?year=${year}`;
+    }
+
+    async function logout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/';
+    }
+
+    init();
+  </script>
+</body>
+</html>

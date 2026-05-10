@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ຜູ້ປ້ອນຂໍ້ມູນ - ລະບົບຕິດຕາມການເຄື່ອນໄຫວ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans Lao', sans-serif; }
+    .sidebar { width: 240px; }
+    .score-bar { transition: width 0.4s ease; }
+    .pending-item { animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+    .completed-text { text-decoration: line-through; color: #9ca3af; }
+    .ring-progress { transform: rotate(-90deg); transform-origin: 50% 50%; }
+  </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="sidebar bg-blue-900 text-white flex flex-col fixed left-0 top-0 h-full z-40 shadow-xl">
+    <div class="p-5 border-b border-blue-800">
+      <div class="flex items-center gap-3 mb-1">
+        <div class="w-9 h-9 bg-white rounded-full flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-blue-900" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+        </div>
+        <div class="overflow-hidden">
+          <p class="font-semibold text-sm truncate" id="user-name">ກຳລັງໂຫລດ...</p>
+          <p class="text-xs text-blue-300 truncate" id="user-branch"></p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 p-3 space-y-1">
+      <button onclick="showSection('list')" id="nav-list"
+        class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm font-medium transition bg-blue-800 text-white">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+        </svg>
+        ລາຍການເຄື່ອນໄຫວ
+      </button>
+      <button onclick="showSection('add')" id="nav-add"
+        class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm font-medium transition text-blue-200 hover:bg-blue-800 hover:text-white">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        ເພີ່ມຂໍ້ມູນໃໝ່
+      </button>
+    </nav>
+
+    <div class="p-3 border-t border-blue-800">
+      <button onclick="logout()"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-blue-200 hover:bg-blue-800 hover:text-white transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        ອອກຈາກລະບົບ
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 ml-60 p-5">
+    <div class="max-w-4xl mx-auto">
+
+      <!-- Header -->
+      <div class="mb-5 flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-bold text-gray-800">ລະບົບຕິດຕາມການເຄື່ອນໄຫວຕ່າງແຂວງ</h1>
+          <p class="text-gray-500 text-xs mt-0.5">ທະນາຄານ LDB</p>
+        </div>
+        <button onclick="exportCSV()"
+          class="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          ດາວໂຫລດ CSV
+        </button>
+      </div>
+
+      <div id="alert" class="hidden mb-4 p-3 rounded-lg text-sm font-medium"></div>
+
+      <!-- LIST SECTION -->
+      <div id="section-list">
+        <div id="movements-list">
+          <div class="text-center py-16 text-gray-400">
+            <svg class="w-12 h-12 mx-auto mb-3 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <p>ກຳລັງໂຫລດ...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD/EDIT SECTION -->
+      <div id="section-add" class="hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="font-semibold text-gray-700" id="form-title">ເພີ່ມຂໍ້ມູນການເຄື່ອນໄຫວ</h2>
+            <button onclick="resetForm()" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <form id="movement-form" class="p-5 space-y-5">
+            <input type="hidden" id="edit-id">
+
+            <!-- Dates & Period & Province -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">ວັນທີເລີ່ມ <span class="text-red-500">*</span></label>
+                <input type="date" id="date-start" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">ວັນທີສິ້ນສຸດ <span class="text-red-500">*</span></label>
+                <input type="date" id="date-end" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">ໄລຍະ <span class="text-red-500">*</span></label>
+                <select id="period" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                  <option value="">ເລືອກໄລຍະ</option>
+                  <option value="1">ໄລຍະ 1</option>
+                  <option value="2">ໄລຍະ 2</option>
+                  <option value="3">ໄລຍະ 3</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">ແຂວງທີ່ເຄື່ອນໄຫວ <span class="text-red-500">*</span></label>
+                <select id="province" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                  <option value="">ເລືອກແຂວງ</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Purpose -->
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">ຈຸດປະສົງການເຄື່ອນໄຫວ</label>
+              <input type="text" id="purpose" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="ລະບຸຈຸດປະສົງ...">
+            </div>
+
+            <!-- Service Scores -->
+            <div class="bg-blue-50 rounded-xl p-4">
+              <h3 class="text-sm font-semibold text-gray-700 mb-4">ຄະແນນມາດຕະຖານການບໍລິການທີ່ເປັນເລີດ</h3>
+              <div class="space-y-4">
+                <div>
+                  <div class="flex justify-between mb-1">
+                    <label class="text-xs font-medium text-blue-700">1. ສະຖານທີ່</label>
+                    <span id="loc-val" class="text-sm font-bold text-blue-700">0</span>
+                  </div>
+                  <input type="range" id="location-score" min="0" max="100" value="0" step="1"
+                    class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    oninput="updateScores()">
+                </div>
+                <div>
+                  <div class="flex justify-between mb-1">
+                    <label class="text-xs font-medium text-green-700">2. ການບໍລິການ</label>
+                    <span id="svc-val" class="text-sm font-bold text-green-700">0</span>
+                  </div>
+                  <input type="range" id="service-score" min="0" max="100" value="0" step="1"
+                    class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-green-600"
+                    oninput="updateScores()">
+                </div>
+                <div>
+                  <div class="flex justify-between mb-1">
+                    <label class="text-xs font-medium text-purple-700">3. ພະນັກງານ</label>
+                    <span id="stf-val" class="text-sm font-bold text-purple-700">0</span>
+                  </div>
+                  <input type="range" id="staff-score" min="0" max="100" value="0" step="1"
+                    class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                    oninput="updateScores()">
+                </div>
+                <div class="flex items-center justify-between bg-white rounded-lg px-4 py-2.5">
+                  <span class="text-xs font-semibold text-gray-600">ຄະແນນສະເລ່ຍ</span>
+                  <div class="flex items-center gap-3">
+                    <div class="w-28 bg-gray-200 rounded-full h-2.5">
+                      <div id="avg-bar" class="h-2.5 rounded-full bg-yellow-500 score-bar" style="width:0%"></div>
+                    </div>
+                    <span id="avg-val" class="text-lg font-bold text-yellow-600 min-w-12 text-right">0.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lesson Learned (3 sections) -->
+            <div class="bg-green-50 rounded-xl p-4">
+              <h3 class="text-sm font-semibold text-gray-700 mb-3">ບົດຮຽນທີ່ຖອດຖອນໄດ້</h3>
+              <div class="space-y-3">
+                <div>
+                  <label class="flex items-center gap-1.5 text-xs font-medium text-green-700 mb-1">
+                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    ດ້ານດີ
+                  </label>
+                  <textarea id="lesson-good" rows="3"
+                    class="w-full px-3 py-2 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-400 outline-none text-sm resize-none bg-white"
+                    placeholder="ບັນທຶກສິ່ງດີທີ່ພົບເຫັນ..."></textarea>
+                </div>
+                <div>
+                  <label class="flex items-center gap-1.5 text-xs font-medium text-orange-600 mb-1">
+                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    ດ້ານທ້າທາຍ
+                  </label>
+                  <textarea id="lesson-challenge" rows="3"
+                    class="w-full px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-400 outline-none text-sm resize-none bg-white"
+                    placeholder="ບັນທຶກຈຸດທ້າທາຍທີ່ພົບ..."></textarea>
+                </div>
+                <div>
+                  <label class="flex items-center gap-1.5 text-xs font-medium text-blue-600 mb-1">
+                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    ວິທີການແກ້ໄຂ
+                  </label>
+                  <textarea id="lesson-solution" rows="3"
+                    class="w-full px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none text-sm resize-none bg-white"
+                    placeholder="ບັນທຶກວິທີການແກ້ໄຂ ຫຼື ສຳເລັດ..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">ໝາຍເຫດ</label>
+              <textarea id="notes" rows="2"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none"
+                placeholder="ໝາຍເຫດເພີ່ມເຕີມ..."></textarea>
+            </div>
+
+            <div class="flex gap-3 pt-1">
+              <button type="submit"
+                class="flex-1 bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2.5 rounded-lg transition text-sm flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                ບັນທຶກຂໍ້ມູນ
+              </button>
+              <button type="button" onclick="resetForm()"
+                class="px-5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition text-sm">
+                ຍົກເລີກ
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Upload Modal -->
+  <div id="upload-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="font-semibold text-gray-700">ອັບໂຫລດໄຟລລາຍງານ</h3>
+        <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="p-5">
+        <input type="hidden" id="upload-movement-id">
+        <div onclick="document.getElementById('file-input').click()"
+          class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 cursor-pointer transition">
+          <svg class="w-10 h-10 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+          </svg>
+          <p class="text-sm text-gray-500">ຄລິກເພື່ອເລືອກໄຟລ</p>
+          <p class="text-xs text-gray-400 mt-1">PDF, Word, Excel (ສູງສຸດ 20MB)</p>
+          <input type="file" id="file-input" class="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.png">
+        </div>
+        <p id="selected-file-name" class="text-xs text-blue-600 mt-2 text-center hidden"></p>
+        <div id="upload-status" class="hidden mt-2 p-3 rounded-lg text-sm"></div>
+        <button onclick="doUpload()" class="mt-3 w-full bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2.5 rounded-lg transition text-sm">
+          ອັບໂຫລດ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PROVINCES = [
+      'ນະຄອນຫຼວງວຽງຈັນ','ແຂວງວຽງຈັນ','ແຂວງບໍລິຄຳໄຊ','ແຂວງຄຳມ່ວນ',
+      'ແຂວງສະຫວັນນະເຂດ','ແຂວງສາລະວັນ','ແຂວງຈຳປາສັກ','ແຂວງເຊກອງ',
+      'ແຂວງອັດຕະປື','ແຂວງຫຼວງພະບາງ','ແຂວງຫົວພັນ','ແຂວງຊຽງຂວາງ',
+      'ແຂວງຜົ້ງສາລີ','ແຂວງລວງນ້ຳທາ','ແຂວງອຸດົມໄຊ','ແຂວງໄຊຍະບູລີ',
+      'ແຂວງໄຊສົມບູນ','ແຂວງຫຼວງນ້ຳທາ'
+    ];
+
+    let movements = [];
+
+    async function init() {
+      const res = await fetch('/api/auth/me');
+      if (!res.ok) { window.location.href = '/'; return; }
+      const user = await res.json();
+      document.getElementById('user-name').textContent = user.full_name;
+      document.getElementById('user-branch').textContent = user.branch || '';
+
+      const sel = document.getElementById('province');
+      PROVINCES.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p; opt.textContent = p;
+        sel.appendChild(opt);
+      });
+
+      await loadMovements();
+    }
+
+    async function loadMovements() {
+      const res = await fetch('/api/movements');
+      movements = await res.json();
+      renderList();
+    }
+
+    function pctColor(pct) {
+      if (pct === 100) return '#10b981';
+      if (pct >= 50) return '#f59e0b';
+      return '#ef4444';
+    }
+
+    function renderProgressRing(pct, size = 44) {
+      const r = (size / 2) - 4;
+      const circ = 2 * Math.PI * r;
+      const dash = (pct / 100) * circ;
+      const color = pctColor(pct);
+      return `
+        <div class="relative inline-flex items-center justify-center" style="width:${size}px;height:${size}px">
+          <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+            <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#e5e7eb" stroke-width="3.5"/>
+            <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="3.5"
+              stroke-dasharray="${dash} ${circ}" stroke-linecap="round" class="ring-progress"/>
+          </svg>
+          <span class="absolute text-xs font-bold" style="color:${color}">${pct}%</span>
+        </div>`;
+    }
+
+    function renderList() {
+      const container = document.getElementById('movements-list');
+
+      if (!movements.length) {
+        container.innerHTML = `
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center text-gray-400">
+            <svg class="w-14 h-14 mx-auto mb-3 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <p class="font-medium text-base mb-1">ຍັງບໍ່ມີຂໍ້ມູນ</p>
+            <p class="text-sm">ກົດ "ເພີ່ມຂໍ້ມູນໃໝ່" ເພື່ອເລີ່ມ</p>
+          </div>`;
+        return;
+      }
+
+      const periodTag = ['','bg-blue-100 text-blue-700','bg-purple-100 text-purple-700','bg-orange-100 text-orange-700'];
+
+      container.innerHTML = movements.map(m => {
+        const avg = ((+m.location_score + +m.service_score + +m.staff_score) / 3).toFixed(1);
+        const avgColor = avg >= 80 ? 'text-green-600' : avg >= 60 ? 'text-yellow-600' : 'text-red-500';
+        const pct = m.completion_pct;
+        const pendingItems = m.pending_items || [];
+        const files = m.report_files || [];
+
+        const pendingHtml = pendingItems.length ? `
+          <div class="mt-3 pt-3 border-t border-gray-100">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-xs font-semibold text-gray-600">ຂໍ້ຄົງຄ້າງຂອງສາຂາ (${pendingItems.filter(x=>x.is_completed).length}/${pendingItems.length})</p>
+              ${renderProgressRing(pct, 40)}
+            </div>
+            <div class="space-y-1.5">
+              ${pendingItems.map(item => `
+                <div class="flex items-start gap-2 pending-item" id="pitem-${item.id}">
+                  <button onclick="togglePending(${item.id}, ${m.id})"
+                    class="mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition
+                           ${item.is_completed ? 'bg-green-500 border-green-500' : 'border-gray-300 hover:border-green-400'}">
+                    ${item.is_completed ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' : ''}
+                  </button>
+                  <span class="text-sm flex-1 leading-snug ${item.is_completed ? 'completed-text' : 'text-gray-700'}">${escapeHtml(item.description)}</span>
+                  <button onclick="deletePending(${item.id}, ${m.id})" class="text-gray-300 hover:text-red-400 transition shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>`).join('')}
+            </div>
+          </div>` : '';
+
+        return `
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-3 hover:shadow-md transition" id="mcard-${m.id}">
+            <div class="flex items-start gap-3">
+              <div class="flex-1 min-w-0">
+                <!-- Header row -->
+                <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full ${periodTag[m.period]}">ໄລຍະ ${m.period}</span>
+                  <span class="text-sm font-bold text-gray-800">${m.province}</span>
+                  <span class="text-xs text-gray-400">${m.movement_date_start} → ${m.movement_date_end}</span>
+                </div>
+                ${m.purpose ? `<p class="text-sm text-gray-500 mb-2">${escapeHtml(m.purpose)}</p>` : ''}
+
+                <!-- Scores -->
+                <div class="flex flex-wrap gap-3 text-xs">
+                  <span class="text-blue-600">ສະຖານທີ່: <strong>${m.location_score}</strong></span>
+                  <span class="text-green-600">ບໍລິການ: <strong>${m.service_score}</strong></span>
+                  <span class="text-purple-600">ພະນັກງານ: <strong>${m.staff_score}</strong></span>
+                  <span class="font-bold ${avgColor}">ສະເລ່ຍ: ${avg}</span>
+                </div>
+
+                <!-- Files -->
+                ${files.length ? `
+                  <div class="flex flex-wrap gap-1.5 mt-2">
+                    ${files.map(f => `
+                      <a href="/uploads/${f.filename}" target="_blank"
+                        class="inline-flex items-center gap-1 text-xs bg-gray-50 hover:bg-gray-100 text-gray-500 px-2 py-1 rounded border border-gray-200 transition">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg>
+                        ${escapeHtml(f.original_name)}
+                      </a>`).join('')}
+                  </div>` : ''}
+
+                ${pendingHtml}
+
+                <!-- Add pending item -->
+                <div class="mt-3 flex gap-2" id="add-pending-row-${m.id}">
+                  <input type="text" id="new-pending-${m.id}" placeholder="ເພີ່ມຂໍ້ຄົງຄ້າງ..."
+                    class="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();addPending(${m.id});}">
+                  <button onclick="addPending(${m.id})"
+                    class="text-xs px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition font-medium">
+                    + ເພີ່ມ
+                  </button>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex flex-col gap-1 shrink-0">
+                <button onclick="openUploadModal(${m.id})" class="p-1.5 text-green-500 hover:bg-green-50 rounded-lg transition" title="ອັບໂຫລດໄຟລ">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                </button>
+                <button onclick="editMovement(${m.id})" class="p-1.5 text-yellow-500 hover:bg-yellow-50 rounded-lg transition" title="ແກ້ໄຂ">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                </button>
+                <button onclick="deleteMovement(${m.id})" class="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition" title="ລຶບ">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ===== PENDING ITEMS =====
+
+    async function addPending(movementId) {
+      const input = document.getElementById(`new-pending-${movementId}`);
+      const desc = input.value.trim();
+      if (!desc) return;
+
+      const res = await fetch(`/api/movements/${movementId}/pending`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: desc })
+      });
+
+      if (res.ok) {
+        input.value = '';
+        await loadMovements();
+      }
+    }
+
+    async function togglePending(itemId, movementId) {
+      const res = await fetch(`/api/movements/pending/${itemId}/toggle`, { method: 'PATCH' });
+      if (res.ok) {
+        const data = await res.json();
+        // Update UI inline without full reload
+        const btn = document.querySelector(`#pitem-${itemId} button`);
+        const text = document.querySelector(`#pitem-${itemId} span`);
+        if (data.is_completed) {
+          btn.className = 'mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition bg-green-500 border-green-500';
+          btn.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
+          text.classList.add('completed-text');
+          text.classList.remove('text-gray-700');
+        } else {
+          btn.className = 'mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition border-gray-300 hover:border-green-400';
+          btn.innerHTML = '';
+          text.classList.remove('completed-text');
+          text.classList.add('text-gray-700');
+        }
+        // Update progress ring
+        const cardEl = document.getElementById(`mcard-${movementId}`);
+        if (cardEl) {
+          const ringEl = cardEl.querySelector('.relative.inline-flex');
+          if (ringEl) ringEl.outerHTML = renderProgressRing(data.completion_pct, 40);
+        }
+        // Update in local state too
+        const m = movements.find(x => x.id === movementId);
+        if (m) {
+          m.completion_pct = data.completion_pct;
+          const item = m.pending_items.find(x => x.id === itemId);
+          if (item) item.is_completed = data.is_completed;
+        }
+      }
+    }
+
+    async function deletePending(itemId, movementId) {
+      const res = await fetch(`/api/movements/pending/${itemId}`, { method: 'DELETE' });
+      if (res.ok) await loadMovements();
+    }
+
+    // ===== MOVEMENT FORM =====
+
+    function updateScores() {
+      const loc = +document.getElementById('location-score').value;
+      const svc = +document.getElementById('service-score').value;
+      const stf = +document.getElementById('staff-score').value;
+      document.getElementById('loc-val').textContent = loc;
+      document.getElementById('svc-val').textContent = svc;
+      document.getElementById('stf-val').textContent = stf;
+      const avg = ((loc + svc + stf) / 3).toFixed(2);
+      document.getElementById('avg-val').textContent = avg;
+      document.getElementById('avg-bar').style.width = avg + '%';
+      const color = avg >= 80 ? 'bg-green-500' : avg >= 60 ? 'bg-yellow-500' : 'bg-red-500';
+      document.getElementById('avg-bar').className = `h-2.5 rounded-full ${color} score-bar`;
+    }
+
+    document.getElementById('movement-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const editId = document.getElementById('edit-id').value;
+      const body = {
+        movement_date_start: document.getElementById('date-start').value,
+        movement_date_end: document.getElementById('date-end').value,
+        period: document.getElementById('period').value,
+        province: document.getElementById('province').value,
+        purpose: document.getElementById('purpose').value,
+        lesson_good: document.getElementById('lesson-good').value,
+        lesson_challenge: document.getElementById('lesson-challenge').value,
+        lesson_solution: document.getElementById('lesson-solution').value,
+        location_score: document.getElementById('location-score').value,
+        service_score: document.getElementById('service-score').value,
+        staff_score: document.getElementById('staff-score').value,
+        notes: document.getElementById('notes').value
+      };
+
+      const res = await fetch(editId ? `/api/movements/${editId}` : '/api/movements', {
+        method: editId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showAlert('ບັນທຶກຂໍ້ມູນສຳເລັດ', 'success');
+        resetForm();
+        await loadMovements();
+        showSection('list');
+      } else {
+        showAlert(data.error, 'error');
+      }
+    });
+
+    function resetForm() {
+      document.getElementById('edit-id').value = '';
+      document.getElementById('movement-form').reset();
+      document.getElementById('form-title').textContent = 'ເພີ່ມຂໍ້ມູນການເຄື່ອນໄຫວ';
+      ['location-score','service-score','staff-score'].forEach(id => document.getElementById(id).value = 0);
+      ['loc-val','svc-val','stf-val'].forEach(id => document.getElementById(id).textContent = '0');
+      document.getElementById('avg-val').textContent = '0.00';
+      document.getElementById('avg-bar').style.width = '0%';
+      showSection('list');
+    }
+
+    function editMovement(id) {
+      const m = movements.find(x => x.id == id);
+      if (!m) return;
+      document.getElementById('edit-id').value = m.id;
+      document.getElementById('date-start').value = m.movement_date_start;
+      document.getElementById('date-end').value = m.movement_date_end;
+      document.getElementById('period').value = m.period;
+      document.getElementById('province').value = m.province;
+      document.getElementById('purpose').value = m.purpose || '';
+      document.getElementById('lesson-good').value = m.lesson_good || '';
+      document.getElementById('lesson-challenge').value = m.lesson_challenge || '';
+      document.getElementById('lesson-solution').value = m.lesson_solution || '';
+      document.getElementById('location-score').value = m.location_score;
+      document.getElementById('service-score').value = m.service_score;
+      document.getElementById('staff-score').value = m.staff_score;
+      document.getElementById('notes').value = m.notes || '';
+      updateScores();
+      document.getElementById('form-title').textContent = 'ແກ້ໄຂຂໍ້ມູນ';
+      showSection('add');
+    }
+
+    async function deleteMovement(id) {
+      if (!confirm('ທ່ານແນ່ໃຈບໍ່ທີ່ຈະລຶບຂໍ້ມູນນີ້?')) return;
+      const res = await fetch(`/api/movements/${id}`, { method: 'DELETE' });
+      if (res.ok) { showAlert('ລຶບຂໍ້ມູນສຳເລັດ', 'success'); await loadMovements(); }
+    }
+
+    // ===== UPLOAD =====
+
+    function openUploadModal(id) {
+      document.getElementById('upload-movement-id').value = id;
+      document.getElementById('file-input').value = '';
+      document.getElementById('selected-file-name').classList.add('hidden');
+      document.getElementById('upload-status').classList.add('hidden');
+      document.getElementById('upload-modal').classList.remove('hidden');
+    }
+
+    document.getElementById('file-input').addEventListener('change', function() {
+      const nameEl = document.getElementById('selected-file-name');
+      if (this.files[0]) { nameEl.textContent = '📎 ' + this.files[0].name; nameEl.classList.remove('hidden'); }
+      else nameEl.classList.add('hidden');
+    });
+
+    async function doUpload() {
+      const id = document.getElementById('upload-movement-id').value;
+      const file = document.getElementById('file-input').files[0];
+      const status = document.getElementById('upload-status');
+      if (!file) { status.className = 'mt-2 p-3 rounded-lg text-sm bg-red-50 text-red-600'; status.textContent = 'ກາລຸນາເລືອກໄຟລ'; status.classList.remove('hidden'); return; }
+
+      const formData = new FormData();
+      formData.append('report', file);
+      status.className = 'mt-2 p-3 rounded-lg text-sm bg-blue-50 text-blue-600';
+      status.textContent = 'ກຳລັງອັບໂຫລດ...';
+      status.classList.remove('hidden');
+
+      const res = await fetch(`/api/movements/${id}/upload`, { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok) {
+        status.className = 'mt-2 p-3 rounded-lg text-sm bg-green-50 text-green-600';
+        status.textContent = 'ສຳເລັດ: ' + data.original_name;
+        await loadMovements();
+        setTimeout(() => document.getElementById('upload-modal').classList.add('hidden'), 1500);
+      } else {
+        status.className = 'mt-2 p-3 rounded-lg text-sm bg-red-50 text-red-600';
+        status.textContent = data.error;
+      }
+    }
+
+    // ===== UTILS =====
+
+    function showSection(name) {
+      ['list','add'].forEach(s => {
+        document.getElementById(`section-${s}`).classList.toggle('hidden', s !== name);
+        document.getElementById(`nav-${s}`).classList.toggle('bg-blue-800', s === name);
+        document.getElementById(`nav-${s}`).classList.toggle('text-white', s === name);
+        document.getElementById(`nav-${s}`).classList.toggle('text-blue-200', s !== name);
+      });
+    }
+
+    function showAlert(msg, type) {
+      const el = document.getElementById('alert');
+      el.textContent = msg;
+      el.className = `mb-4 p-3 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 3000);
+    }
+
+    function exportCSV() { window.location.href = '/api/movements/export/csv'; }
+
+    async function logout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/';
+    }
+
+    init();
+  </script>
+</body>
+</html>
