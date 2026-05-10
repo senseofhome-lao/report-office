@@ -6,3 +6,4 @@ database/local.sqlite
 .env.local
 *.log
 database_connection.md
+*firebase-adminsdk*.json
