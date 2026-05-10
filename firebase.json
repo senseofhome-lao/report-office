@@ -3,21 +3,23 @@
     "public": "public",
     "ignore": ["**/.*", "**/*.md"],
     "rewrites": [
-      { "source": "/api/**", "function": "api" },
+      { "source": "/api/**", "function": "api", "region": "us-central1" },
       { "source": "/user", "destination": "/user/dashboard.html" },
       { "source": "/admin", "destination": "/admin/dashboard.html" }
     ]
   },
-  "functions": {
-    "source": ".",
-    "runtime": "nodejs18",
-    "ignore": [
-      "node_modules/**",
-      "public/**",
-      "uploads/**",
-      ".git/**",
-      "*.md",
-      ".env*"
-    ]
-  }
+  "functions": [
+    {
+      "source": ".",
+      "codebase": "default",
+      "runtime": "nodejs22",
+      "ignore": [
+        "node_modules/**",
+        "public/**",
+        "uploads/**",
+        ".git/**",
+        "*.md"
+      ]
+    }
+  ]
 }

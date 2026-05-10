@@ -1,3 +1,3 @@
-const functions = require('firebase-functions');
+const { onRequest } = require('firebase-functions/v2/https');
 const app = require('./server');
-exports.api = functions.https.onRequest(app);
+exports.api = onRequest({ region: 'us-central1', timeoutSeconds: 60, memory: '256MiB' }, app);
