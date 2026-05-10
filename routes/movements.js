@@ -26,16 +26,17 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
   });
   upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
   useCloudinary = true;
-} else {
-  const uploadsDir = process.env.VERCEL
-    ? '/tmp/uploads'
-    : path.join(__dirname, '../uploads');
+} else if (process.env.NODE_ENV !== 'production') {
+  const uploadsDir = path.join(__dirname, '../uploads');
   if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
   const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadsDir),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + Math.round(Math.random() * 1e6) + path.extname(file.originalname))
   });
   upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
+} else {
+  // Production without Cloudinary: accept upload in memory only
+  upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 }
 
 // Get all movements for current user
@@ -168,6 +169,9 @@ router.post('/:id/upload', requireAuth, upload.single('report'), async (req, res
     const movement = await getOne('SELECT * FROM movements WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
     if (!movement) return res.status(404).json({ error: 'ບໍ່ພົບຂໍ້ມູນ' });
     if (!req.file) return res.status(400).json({ error: 'ກາລຸນາເລືອກໄຟລ' });
+
+    if (!useCloudinary && process.env.NODE_ENV === 'production')
+      return res.status(503).json({ error: 'ການອັບໂຫລດໄຟລຮຽກຮ້ອງການຕັ້ງຄ່າ Cloudinary' });
 
     let fileUrl, publicId;
     if (useCloudinary) {
