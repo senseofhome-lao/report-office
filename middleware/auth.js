@@ -1,13 +1,17 @@
 const jwt = require('jsonwebtoken');
 
+// Firebase Hosting only forwards cookies named '__session' to Cloud Functions.
+// All other cookie names are stripped at the CDN layer.
+const COOKIE_NAME = '__session';
+
 function requireAuth(req, res, next) {
-  const token = req.cookies?.auth_token;
+  const token = req.cookies?.[COOKIE_NAME];
   if (!token) return res.status(401).json({ error: 'ກາລຸນາ login ກ່ອນ' });
   try {
     req.user = jwt.verify(token, process.env.JWT_SECRET || 'ldb-dev-secret');
     next();
   } catch {
-    res.clearCookie('auth_token');
+    res.clearCookie(COOKIE_NAME);
     return res.status(401).json({ error: 'Session ໝົດອາຍຸ ກາລຸນາ login ໃໝ່' });
   }
 }
@@ -28,9 +32,9 @@ function cookieOpts() {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     maxAge: 8 * 60 * 60 * 1000
   };
 }
 
-module.exports = { requireAuth, requireAdmin, signToken, cookieOpts };
+module.exports = { requireAuth, requireAdmin, signToken, cookieOpts, COOKIE_NAME };
