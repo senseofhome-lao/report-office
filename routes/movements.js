@@ -27,7 +27,9 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
   upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
   useCloudinary = true;
 } else {
-  const uploadsDir = path.join(__dirname, '../uploads');
+  const uploadsDir = process.env.VERCEL
+    ? '/tmp/uploads'
+    : path.join(__dirname, '../uploads');
   if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
   const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadsDir),
