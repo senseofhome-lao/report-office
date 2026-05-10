@@ -1,21 +1,14 @@
-const { Pool } = require('pg');
+const { neon } = require('@neondatabase/serverless');
 const bcrypt = require('bcryptjs');
 
-let pool;
+let _sql;
 
-function getPool() {
-  if (!pool) {
-    if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-      max: 3,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000
-    });
-    pool.on('error', (err) => console.error('PG pool error:', err.message));
+function getSql() {
+  if (!_sql) {
+    if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL environment variable is not set');
+    _sql = neon(process.env.DATABASE_URL);
   }
-  return pool;
+  return _sql;
 }
 
 // Convert SQLite ? params → Postgres $1, $2, ...
@@ -25,16 +18,17 @@ function toPostgres(sql) {
 }
 
 async function query(sql, params = []) {
-  const result = await getPool().query(toPostgres(sql), params);
-  return result.rows;
+  const db = getSql();
+  return await db.query(toPostgres(sql), params);
 }
 
 async function run(sql, params = []) {
+  const db = getSql();
   const pgSql = toPostgres(sql).trim();
   const isInsert = pgSql.toUpperCase().startsWith('INSERT');
   const finalSql = isInsert ? pgSql + ' RETURNING id' : pgSql;
-  const result = await getPool().query(finalSql, params);
-  return { lastInsertRowid: isInsert && result.rows[0] ? Number(result.rows[0].id) : 0 };
+  const rows = await db.query(finalSql, params);
+  return { lastInsertRowid: isInsert && rows[0] ? Number(rows[0].id) : 0 };
 }
 
 async function getOne(sql, params = []) {
@@ -43,7 +37,7 @@ async function getOne(sql, params = []) {
 }
 
 async function initDB() {
-  const db = getPool();
+  const db = getSql();
 
   await db.query(`CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
@@ -92,14 +86,18 @@ async function initDB() {
   )`);
 
   // Seed default users if none exist
-  const existing = await getOne('SELECT id FROM users LIMIT 1');
-  if (!existing) {
+  const rows = await db.query('SELECT id FROM users LIMIT 1');
+  if (!rows.length) {
     const adminPass = bcrypt.hashSync('admin123', 10);
-    const userPass = bcrypt.hashSync('user123', 10);
-    await run(`INSERT INTO users (username, password, full_name, role, branch) VALUES (?, ?, ?, ?, ?)`,
-      ['admin', adminPass, 'ຜູ້ບໍລິຫານລະບົບ', 'admin', 'ສຳນັກງານໃຫຍ່']);
-    await run(`INSERT INTO users (username, password, full_name, role, branch) VALUES (?, ?, ?, ?, ?)`,
-      ['user1', userPass, 'ພະນັກງານທົດສອບ', 'user', 'ສາຂາວຽງຈັນ']);
+    const userPass  = bcrypt.hashSync('user123', 10);
+    await db.query(
+      `INSERT INTO users (username, password, full_name, role, branch) VALUES ($1,$2,$3,$4,$5)`,
+      ['admin', adminPass, 'ຜູ້ບໍລິຫານລະບົບ', 'admin', 'ສຳນັກງານໃຫຍ່']
+    );
+    await db.query(
+      `INSERT INTO users (username, password, full_name, role, branch) VALUES ($1,$2,$3,$4,$5)`,
+      ['user1', userPass, 'ພະນັກງານທົດສອບ', 'user', 'ສາຂາວຽງຈັນ']
+    );
     console.log('Seeded default users');
   }
 }
